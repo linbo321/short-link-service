@@ -557,7 +557,7 @@ http://localhost/api/link/recent
 Invoke-WebRequest -UseBasicParsing http://localhost/000001 -MaximumRedirection 0
 ```
 
-只要响应状态是 `302`，并且 `Location` 是原始 URL，说明短链接服务正常。
+只要响应状态是 `302`，并且 `地址` 是原始 URL，说明短链接服务正常。
 
 ### 6. Docker Hub 拉镜像失败
 
@@ -575,19 +575,3 @@ docker build --pull=false -f Dockerfile.local -t short-link-service-app .
 docker compose up -d --no-build app nginx
 ```
 
-## 简历描述参考
-
-可以写成：
-
-```text
-短链接生成服务：基于 Spring Boot、MyBatis-Plus、MySQL、Redis 和 Docker Compose 实现短链接生成与跳转系统。使用数据库自增 ID + Base62 生成固定长度短码，Redis 缓存提升跳转性能，Guava BloomFilter 降低无效短码穿透，Redis ZSET 实现生成接口滑动窗口限流，访问量先写 Redis 后定时批量同步 MySQL，并提供 Vue 单页管理界面和 Nginx 反向代理部署。
-```
-
-也可以拆成项目亮点：
-
-- 使用 MySQL 自增 ID + Base62 编码生成稳定短码，避免随机短码碰撞问题。
-- 使用 Redis 缓存短码映射，提高高频跳转场景的响应速度。
-- 使用 Redis ZSET 实现按 IP 滑动窗口限流，保护生成接口。
-- 使用 BloomFilter 减少无效短码对数据库的穿透查询。
-- 使用 Redis 计数器 + 定时任务批量落库，降低访问统计对 MySQL 的写入压力。
-- 使用 Docker Compose 编排 Nginx、Spring Boot、MySQL、Redis，支持一键部署和本地演示。

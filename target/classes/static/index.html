@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>短链接生成工具</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --line: #d8dee8;
+      --primary: #2563eb;
+      --accent: #0f766e;
+      --warn: #b45309;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app-shell {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 36px 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.2;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .panel h2 {
+      margin: 0 0 18px;
+      font-size: 18px;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .result {
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 18px;
+    }
+
+    .result-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(37, 99, 235, 0.12);
+    }
+
+    .result-row:last-child {
+      border-bottom: 0;
+    }
+
+    .result-label {
+      color: var(--muted);
+    }
+
+    .result-value {
+      overflow-wrap: anywhere;
+      font-weight: 620;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .history-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcfe;
+    }
+
+    .history-code {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-weight: 720;
+    }
+
+    .history-url {
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .empty {
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      text-align: center;
+    }
+
+    @media (max-width: 820px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="app" class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <h1>短链接生成工具</h1>
+      <p>生成、复制、查询访问量，一个页面完成日常短链操作。</p>
+    </div>
+    <div class="status">
+      <span class="status-dot"></span>
+      <span>API /api/link</span>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="panel">
+      <h2>生成短链接</h2>
+      <el-form label-position="top">
+        <el-form-item label="原始链接">
+          <el-input v-model="form.url" placeholder="https://example.com/very/long/url" clearable></el-input>
+        </el-form-item>
+        <el-form-item label="过期时间">
+          <el-select v-model="form.expireHours" style="width: 100%">
+            <el-option label="1 小时" :value="1"></el-option>
+            <el-option label="24 小时" :value="24"></el-option>
+            <el-option label="7 天" :value="168"></el-option>
+            <el-option label="永久有效" :value="null"></el-option>
+          </el-select>
+        </el-form-item>
+        <div class="form-actions">
+          <el-button type="primary" :loading="loading" @click="generate">生成短链接</el-button>
+          <el-button @click="reset">清空</el-button>
+        </div>
+      </el-form>
+
+      <div v-if="result" class="result">
+        <div class="result-row">
+          <div class="result-label">短链接</div>
+          <div class="result-value">
+            <el-link type="primary" :href="result.shortUrl" target="_blank">{{ result.shortUrl }}</el-link>
+            <el-button size="small" text type="primary" @click="copy(result.shortUrl)">复制</el-button>
+          </div>
+        </div>
+        <div class="result-row">
+          <div class="result-label">原链接</div>
+          <div class="result-value">{{ result.originalUrl }}</div>
+        </div>
+        <div class="result-row">
+          <div class="result-label">过期时间</div>
+          <div class="result-value">{{ result.expireTime || '永久有效' }}</div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h2>最近生成</h2>
+      <div v-if="history.length" class="history-list">
+        <div v-for="item in history" :key="item.shortCode" class="history-item">
+          <div class="history-code">
+            <span>{{ item.shortCode }}</span>
+            <el-button size="small" @click="refreshInfo(item)">查询访问量</el-button>
+          </div>
+          <div class="history-url">{{ item.originalUrl }}</div>
+          <div class="history-url">访问量：{{ item.visitCount ?? '未查询' }}</div>
+        </div>
+      </div>
+      <div v-else class="empty">生成后的短链接会显示在这里。</div>
+    </aside>
+  </main>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/element-plus/dist/index.full.min.js"></script>
+<script>
+const { createApp, onMounted, reactive, ref } = Vue;
+
+createApp({
+  setup() {
+    const form = reactive({ url: '', expireHours: 24 });
+    const loading = ref(false);
+    const result = ref(null);
+    const history = ref([]);
+
+    onMounted(loadRecent);
+
+    async function generate() {
+      if (!form.url) {
+        ElementPlus.ElMessage.warning('请输入原始链接');
+        return;
+      }
+      loading.value = true;
+      try {
+        const response = await fetch('/api/link/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: form.url, expireHours: form.expireHours })
+        });
+        const payload = await response.json();
+        if (!response.ok || payload.code !== 200) {
+          throw new Error(payload.message || '生成失败');
+        }
+        result.value = payload.data;
+        history.value = [payload.data, ...history.value.filter(item => item.shortCode !== payload.data.shortCode)].slice(0, 6);
+        ElementPlus.ElMessage.success('短链接已生成');
+      } catch (error) {
+        ElementPlus.ElMessage.error(error.message);
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    async function refreshInfo(item) {
+      try {
+        const response = await fetch(`/api/link/info/${item.shortCode}`);
+        const payload = await response.json();
+        if (!response.ok || payload.code !== 200) {
+          throw new Error(payload.message || '查询失败');
+        }
+        item.visitCount = payload.data.visitCount;
+      } catch (error) {
+        ElementPlus.ElMessage.error(error.message);
+      }
+    }
+
+    async function loadRecent() {
+      try {
+        const response = await fetch('/api/link/recent');
+        const payload = await response.json();
+        if (!response.ok || payload.code !== 200) {
+          throw new Error(payload.message || '加载最近生成失败');
+        }
+        history.value = payload.data || [];
+      } catch (error) {
+        ElementPlus.ElMessage.warning(error.message);
+      }
+    }
+
+    async function copy(text) {
+      await navigator.clipboard.writeText(text);
+      ElementPlus.ElMessage.success('已复制');
+    }
+
+    function reset() {
+      form.url = '';
+      form.expireHours = 24;
+      result.value = null;
+    }
+
+    return { form, loading, result, history, generate, refreshInfo, copy, reset };
+  }
+}).use(ElementPlus).mount('#app');
+</script>
+</body>
+</html>
